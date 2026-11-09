@@ -1,0 +1,12 @@
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.4
+    hooks:
+      - id: gitleaks
+  - repo: local
+    hooks:
+      - id: semgrep
+        name: semgrep (owasp-top-ten)
+        entry: semgrep --config p/owasp-top-ten --severity ERROR --error
+        language: system
+        types_or: [javascript, ts]
