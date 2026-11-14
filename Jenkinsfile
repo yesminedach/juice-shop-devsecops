@@ -43,6 +43,24 @@ pipeline {
       }
     }
 
+    stage('build_image') {
+      options { timeout(time: 40, unit: 'MINUTES') }
+      steps {
+        sh 'docker build -t juice-shop:${BUILD_NUMBER} .'
+      }
+    }
+
+    stage('docker_scan') {
+      options { timeout(time: 20, unit: 'MINUTES') }
+      steps {
+        sh '''
+          T="docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v trivy-cache:/root/.cache --volumes-from jenkins -w $WORKSPACE aquasec/trivy:latest"
+          $T image --scanners vuln --format json -o trivy-image.json juice-shop:${BUILD_NUMBER} || true
+          $T image --scanners vuln --severity HIGH,CRITICAL juice-shop:${BUILD_NUMBER} || true
+        '''
+      }
+    }
+
     stage('Build') {
       steps { sh 'echo "build simulé"' }
     }
@@ -59,7 +77,7 @@ pipeline {
 
   post {
     always {
-      archiveArtifacts artifacts: 'gitleaks.json, semgrep.json, trivy-fs.json', allowEmptyArchive: true
+      archiveArtifacts artifacts: 'gitleaks.json, semgrep.json, trivy-fs.json, trivy-image.json', allowEmptyArchive: true
     }
   }
 }
