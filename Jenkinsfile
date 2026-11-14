@@ -18,6 +18,17 @@ pipeline {
       }
     }
 
+    stage('sast_semgrep') {
+      steps {
+        sh '''
+          docker run --rm --volumes-from jenkins -w "$WORKSPACE" \
+            semgrep/semgrep semgrep --config p/owasp-top-ten \
+            --severity ERROR --json -o semgrep.json routes/ lib/ server.ts app.ts \
+            || true
+        '''
+      }
+    }
+
     stage('Build') {
       steps { sh 'echo "build simulé"' }
     }
@@ -34,7 +45,7 @@ pipeline {
 
   post {
     always {
-      archiveArtifacts artifacts: 'gitleaks.json', allowEmptyArchive: true
+      archiveArtifacts artifacts: 'gitleaks.json, semgrep.json', allowEmptyArchive: true
     }
   }
 }
