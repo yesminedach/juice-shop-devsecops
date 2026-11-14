@@ -33,9 +33,9 @@ pipeline {
       steps {
         sh '''
           T="docker run --rm --volumes-from jenkins -w $WORKSPACE -v trivy-cache:/root/.cache aquasec/trivy:latest"
-          $T fs --scanners vuln --skip-dirs node_modules --format json -o trivy-fs.json package-lock.json
-          $T fs --scanners vuln --skip-dirs node_modules --format template --template "@/contrib/html.tpl" -o trivy-fs.html package-lock.json
-          $T fs --scanners vuln --skip-dirs node_modules --severity HIGH,CRITICAL package-lock.json || true
+          $T fs --scanners vuln --skip-dirs node_modules,.git,test,data --format json -o trivy-fs.json .
+          $T fs --scanners vuln --skip-dirs node_modules,.git,test,data --format template --template "@/contrib/html.tpl" -o trivy-fs.html .
+          $T fs --scanners vuln --skip-dirs node_modules,.git,test,data --severity HIGH,CRITICAL . || true
         '''
       }
     }
