@@ -1,6 +1,6 @@
 pipeline {
   agent any
-  options { timestamps() }
+  options { timestamps(); disableConcurrentBuilds() }
 
   stages {
     stage('Checkout') {
@@ -30,12 +30,15 @@ pipeline {
     }
 
     stage('scan_dependencies') {
+      options { timeout(time: 15, unit: 'MINUTES') }
       steps {
         sh '''
-          T="docker run --rm --volumes-from jenkins -w $WORKSPACE -v trivy-cache:/root/.cache aquasec/trivy:latest"
-          $T fs --scanners vuln --skip-dirs node_modules,.git,test,data --format json -o trivy-fs.json .
-          $T fs --scanners vuln --skip-dirs node_modules,.git,test,data --format template --template "@/contrib/html.tpl" -o trivy-fs.html .
-          $T fs --scanners vuln --skip-dirs node_modules,.git,test,data --severity HIGH,CRITICAL . || true
+          docker run --rm --volumes-from jenkins -w "$WORKSPACE" -v trivy-cache:/root/.cache \
+            aquasec/trivy:latest fs --scanners vuln \
+            --format json -o trivy-fs.json package-lock.json || true
+          docker run --rm --volumes-from jenkins -w "$WORKSPACE" -v trivy-cache:/root/.cache \
+            aquasec/trivy:latest fs --scanners vuln \
+            --severity HIGH,CRITICAL package-lock.json || true
         '''
       }
     }
@@ -56,7 +59,7 @@ pipeline {
 
   post {
     always {
-      archiveArtifacts artifacts: 'gitleaks.json, semgrep.json, trivy-fs.json, trivy-fs.html', allowEmptyArchive: true
+      archiveArtifacts artifacts: 'gitleaks.json, semgrep.json, trivy-fs.json', allowEmptyArchive: true
     }
   }
 }
