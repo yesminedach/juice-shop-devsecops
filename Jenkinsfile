@@ -29,6 +29,17 @@ pipeline {
       }
     }
 
+    stage('scan_dependencies') {
+      steps {
+        sh '''
+          T="docker run --rm --volumes-from jenkins -w $WORKSPACE -v trivy-cache:/root/.cache aquasec/trivy:latest"
+          $T fs --scanners vuln --skip-dirs node_modules --format json -o trivy-fs.json package-lock.json
+          $T fs --scanners vuln --skip-dirs node_modules --format template --template "@/contrib/html.tpl" -o trivy-fs.html package-lock.json
+          $T fs --scanners vuln --skip-dirs node_modules --severity HIGH,CRITICAL package-lock.json || true
+        '''
+      }
+    }
+
     stage('Build') {
       steps { sh 'echo "build simulé"' }
     }
@@ -45,7 +56,7 @@ pipeline {
 
   post {
     always {
-      archiveArtifacts artifacts: 'gitleaks.json, semgrep.json', allowEmptyArchive: true
+      archiveArtifacts artifacts: 'gitleaks.json, semgrep.json, trivy-fs.json, trivy-fs.html', allowEmptyArchive: true
     }
   }
 }
