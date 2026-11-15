@@ -62,6 +62,7 @@ export function getUserProfile () {
           if (!code) {
             throw new Error('Username is null')
           }
+          // nosemgrep -- faille volontaire Juice Shop (challenge), risque accepte, valide le 2026-11-15
           username = eval(code) // eslint-disable-line no-eval
         } catch (err) {
           username = '\\' + username
