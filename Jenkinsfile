@@ -61,6 +61,25 @@ pipeline {
       }
     }
 
+    stage('dast') {
+      options { timeout(time: 25, unit: 'MINUTES') }
+      steps {
+        catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
+          sh '''
+            docker rm -f app zap || true
+            docker run -d --name app --network devsecops juice-shop:${BUILD_NUMBER}
+            sleep 40
+            docker run --name zap --network devsecops --user root \
+              ghcr.io/zaproxy/zaproxy:stable sh -c \
+              "mkdir -p /zap/wrk && zap-baseline.py -t http://app:3000 -r zap.html -J zap.json -I" || true
+            docker cp zap:/zap/wrk/zap.html . || true
+            docker cp zap:/zap/wrk/zap.json . || true
+            docker rm -f zap app || true
+          '''
+        }
+      }
+    }
+
     stage('Build') {
       steps { sh 'echo "build simulé"' }
     }
@@ -77,7 +96,7 @@ pipeline {
 
   post {
     always {
-      archiveArtifacts artifacts: 'gitleaks.json, semgrep.json, trivy-fs.json, trivy-image.json', allowEmptyArchive: true
+      archiveArtifacts artifacts: 'gitleaks.json, semgrep.json, trivy-fs.json, trivy-image.json, zap.html, zap.json', allowEmptyArchive: true
     }
   }
 }
