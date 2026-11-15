@@ -63,6 +63,20 @@ pipeline {
       }
     }
 
+    stage('iac_scan') {
+      options { timeout(time: 15, unit: 'MINUTES') }
+      steps {
+        catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
+          sh '''
+            docker run --rm --volumes-from jenkins -w "$WORKSPACE" \
+              bridgecrew/checkov:latest -d . --framework dockerfile,terraform \
+              --skip-path node_modules --soft-fail -o json --output-file-path . || true
+            [ -f results_json.json ] && mv results_json.json checkov.json || true
+          '''
+        }
+      }
+    }
+
     stage('build_image') {
       options { timeout(time: 40, unit: 'MINUTES') }
       steps {
@@ -138,7 +152,7 @@ pipeline {
       }
     }
     always {
-      archiveArtifacts artifacts: 'gitleaks.json, semgrep.json, trivy-fs.json, trivy-image.json, zap.html, zap.json, sbom.cdx.json', allowEmptyArchive: true
+      archiveArtifacts artifacts: 'gitleaks.json, semgrep.json, trivy-fs.json, trivy-image.json, zap.html, zap.json, sbom.cdx.json, checkov.json', allowEmptyArchive: true
     }
   }
 }
