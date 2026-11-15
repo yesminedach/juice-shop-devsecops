@@ -2,7 +2,7 @@ pipeline {
   agent any
   options { timestamps(); disableConcurrentBuilds() }
   parameters {
-    booleanParam(name: 'ENFORCE_GATES', defaultValue: false,
+    booleanParam(name: 'ENFORCE_GATES', defaultValue: true,
                  description: 'true = bloque sur HIGH/CRITICAL, false = rapport seulement')
   }
   environment {
