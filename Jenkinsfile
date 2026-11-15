@@ -18,7 +18,7 @@ pipeline {
       steps {
         sh '''
           docker run --rm --volumes-from jenkins -w "$WORKSPACE" \
-            ghcr.io/gitleaks/gitleaks:latest detect --source . --no-git \
+            ghcr.io/gitleaks/gitleaks:latest detect --source . --no-git --config .gitleaks.toml \
             --report-format json --report-path gitleaks.json --exit-code 1 \
             || [ "$GATE" = "0" ]
         '''

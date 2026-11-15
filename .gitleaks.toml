@@ -1,0 +1,12 @@
+title = "Config Gitleaks - Juice Shop (application volontairement vulnerable)"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Faux positifs : donnees factices de test et de demonstration"
+paths = [
+  '''^test/''',
+  '''^frontend/src/''',
+  '''^data/static/''',
+]
