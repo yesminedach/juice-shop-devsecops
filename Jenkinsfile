@@ -36,6 +36,19 @@ pipeline {
       }
     }
 
+    stage('sast_sonarqube') {
+      options { timeout(time: 20, unit: 'MINUTES') }
+      steps {
+        withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+          sh '''
+            docker run --rm --network devsecops --volumes-from jenkins -w "$WORKSPACE" \
+              -e SONAR_HOST_URL=http://sonarqube:9000 -e SONAR_TOKEN=$SONAR_TOKEN \
+              sonarsource/sonar-scanner-cli:latest || [ "$GATE" = "0" ]
+          '''
+        }
+      }
+    }
+
     stage('scan_dependencies') {
       options { timeout(time: 15, unit: 'MINUTES') }
       steps {
