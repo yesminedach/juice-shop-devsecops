@@ -115,6 +115,15 @@ pipeline {
   }
 
   post {
+    failure {
+      withCredentials([string(credentialsId: 'notify-webhook', variable: 'HOOK')]) {
+        sh '''
+          curl -s -X POST -H "Content-Type: application/json" \
+            -d "{\\"content\\":\\"PIPELINE BLOQUE - ${JOB_NAME} #${BUILD_NUMBER} - ${BUILD_URL}\\"}" \
+            "$HOOK" || true
+        '''
+      }
+    }
     always {
       archiveArtifacts artifacts: 'gitleaks.json, semgrep.json, trivy-fs.json, trivy-image.json, zap.html, zap.json, sbom.cdx.json', allowEmptyArchive: true
     }
