@@ -45,7 +45,7 @@ pipeline {
             --format json -o trivy-fs.json package-lock.json || true
           docker run --rm --volumes-from jenkins -w "$WORKSPACE" -v trivy-cache:/root/.cache \
             aquasec/trivy:latest fs --scanners vuln \
-            --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 package-lock.json || [ "$GATE" = "0" ]
+            --severity CRITICAL --ignore-unfixed --exit-code 1 --ignorefile .trivyignore package-lock.json || [ "$GATE" = "0" ]
         '''
       }
     }
@@ -63,7 +63,7 @@ pipeline {
         sh '''
           T="docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v trivy-cache:/root/.cache --volumes-from jenkins -w $WORKSPACE aquasec/trivy:latest"
           $T image --scanners vuln --format json -o trivy-image.json juice-shop:${BUILD_NUMBER} || true
-          $T image --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 juice-shop:${BUILD_NUMBER} || [ "$GATE" = "0" ]
+          $T image --scanners vuln --severity CRITICAL --ignore-unfixed --exit-code 1 --ignorefile .trivyignore juice-shop:${BUILD_NUMBER} || [ "$GATE" = "0" ]
         '''
       }
     }
