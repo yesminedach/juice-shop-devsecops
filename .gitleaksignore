@@ -1,7 +1,7 @@
 # Faux positif : cle RSA de demonstration de Juice Shop (JWT volontairement faibles). Valide par l'equipe le 2026-11-15
 lib/insecurity.ts:private-key:21
 # Faux positif : valeur factice de demonstration (challenge Juice Shop). Valide par l'equipe le 2026-11-15
-routes/login.ts:generic-api-key:64
+routes/login.ts:generic-api-key:65
 # Faux positif : cle d'exemple dans le Terraform de demonstration. Valide par l'equipe le 2026-11-15
 infrastructure/terraform/networking.tf:private-key:171
 terraform/networking.tf:private-key:171
