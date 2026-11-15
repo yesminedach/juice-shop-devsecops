@@ -68,6 +68,19 @@ pipeline {
       }
     }
 
+    stage('sbom') {
+      options { timeout(time: 15, unit: 'MINUTES') }
+      steps {
+        catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
+          sh '''
+            docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+              --volumes-from jenkins -w "$WORKSPACE" \
+              anchore/syft:latest juice-shop:${BUILD_NUMBER} -o cyclonedx-json=sbom.cdx.json
+          '''
+        }
+      }
+    }
+
     stage('dast') {
       options { timeout(time: 25, unit: 'MINUTES') }
       steps {
@@ -103,7 +116,7 @@ pipeline {
 
   post {
     always {
-      archiveArtifacts artifacts: 'gitleaks.json, semgrep.json, trivy-fs.json, trivy-image.json, zap.html, zap.json', allowEmptyArchive: true
+      archiveArtifacts artifacts: 'gitleaks.json, semgrep.json, trivy-fs.json, trivy-image.json, zap.html, zap.json, sbom.cdx.json', allowEmptyArchive: true
     }
   }
 }
