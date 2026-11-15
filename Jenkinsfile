@@ -1,6 +1,13 @@
 pipeline {
   agent any
   options { timestamps(); disableConcurrentBuilds() }
+  parameters {
+    booleanParam(name: 'ENFORCE_GATES', defaultValue: false,
+                 description: 'true = bloque sur HIGH/CRITICAL, false = rapport seulement')
+  }
+  environment {
+    GATE = "${params.ENFORCE_GATES ? '1' : '0'}"
+  }
 
   stages {
     stage('Checkout') {
@@ -13,7 +20,7 @@ pipeline {
           docker run --rm --volumes-from jenkins -w "$WORKSPACE" \
             ghcr.io/gitleaks/gitleaks:latest detect --source . --no-git \
             --report-format json --report-path gitleaks.json --exit-code 1 \
-            || true
+            || [ "$GATE" = "0" ]
         '''
       }
     }
@@ -23,8 +30,8 @@ pipeline {
         sh '''
           docker run --rm --volumes-from jenkins -w "$WORKSPACE" \
             semgrep/semgrep semgrep --config p/owasp-top-ten \
-            --severity ERROR --json -o semgrep.json routes/ lib/ server.ts app.ts \
-            || true
+            --severity ERROR --error --json -o semgrep.json routes/ lib/ server.ts app.ts \
+            || [ "$GATE" = "0" ]
         '''
       }
     }
@@ -38,7 +45,7 @@ pipeline {
             --format json -o trivy-fs.json package-lock.json || true
           docker run --rm --volumes-from jenkins -w "$WORKSPACE" -v trivy-cache:/root/.cache \
             aquasec/trivy:latest fs --scanners vuln \
-            --severity HIGH,CRITICAL package-lock.json || true
+            --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 package-lock.json || [ "$GATE" = "0" ]
         '''
       }
     }
@@ -56,7 +63,7 @@ pipeline {
         sh '''
           T="docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v trivy-cache:/root/.cache --volumes-from jenkins -w $WORKSPACE aquasec/trivy:latest"
           $T image --scanners vuln --format json -o trivy-image.json juice-shop:${BUILD_NUMBER} || true
-          $T image --scanners vuln --severity HIGH,CRITICAL juice-shop:${BUILD_NUMBER} || true
+          $T image --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 juice-shop:${BUILD_NUMBER} || [ "$GATE" = "0" ]
         '''
       }
     }
